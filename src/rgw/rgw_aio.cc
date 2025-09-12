@@ -4,7 +4,7 @@
 /*
  * Ceph - scalable distributed file system
  *
- * Copyright (C) 2018 Red Hat, Inc.
+ * Copyright (C) 2018-2026 Red Hat, Inc.
  *
  * This is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,7 +19,6 @@
 
 #include "rgw_aio.h"
 #include "rgw_d3n_cacherequest.h"
-#include "rgw_cache_driver.h"
 
 namespace rgw {
 
