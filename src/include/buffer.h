@@ -1006,6 +1006,7 @@ struct error_code;
     const buffers_t& buffers() const { return _buffers; }
     buffers_t& mut_buffers() { return _buffers; }
     void swap(list& other) noexcept;
+
     unsigned length() const {
 #if 0
       // DEBUG: verify _len
@@ -1022,6 +1023,11 @@ struct error_code;
 #endif // __CEPH__
 #endif
       return _len;
+    }
+   
+    // Allow use with std::size(); like std::string, this is the same as length(): 
+    unsigned size() const {
+      return length();
     }
 
     bool contents_equal(const buffer::list& other) const;

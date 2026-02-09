@@ -2316,9 +2316,11 @@ TEST(BufferList, append_zero) {
   bl.append('A');
   EXPECT_EQ((unsigned)1, bl.get_num_buffers());
   EXPECT_EQ((unsigned)1, bl.length());
+  EXPECT_EQ(bl.size(), bl.length());
   bl.append_zero(1);
   EXPECT_EQ((unsigned)1, bl.get_num_buffers());
   EXPECT_EQ((unsigned)2, bl.length());
+  EXPECT_EQ(bl.size(), bl.length());
   EXPECT_EQ('\0', bl[1]);
 }
 
@@ -2407,8 +2409,10 @@ TEST(BufferList, splice) {
   bl.splice(4, 4, &other);
   EXPECT_EQ((unsigned)3, other.get_num_buffers());
   EXPECT_EQ((unsigned)5, other.length());
+  EXPECT_EQ(other.size(), other.length());
   EXPECT_EQ(0, ::memcmp("XEFGH", other.c_str(), other.length()));
   EXPECT_EQ((unsigned)8, bl.length());
+  EXPECT_EQ(bl.size(), bl.length());
   {
     bufferlist tmp(bl);
     EXPECT_EQ(0, ::memcmp("ABCDIJKL", tmp.c_str(), tmp.length()));
@@ -2416,6 +2420,7 @@ TEST(BufferList, splice) {
 
   bl.splice(4, 4);
   EXPECT_EQ((unsigned)4, bl.length());
+  EXPECT_EQ(bl.size(), bl.length());
   EXPECT_EQ(0, ::memcmp("ABCD", bl.c_str(), bl.length()));
 
   {
@@ -2428,6 +2433,9 @@ TEST(BufferList, splice) {
     bl.splice(10, 4, &other);
     EXPECT_EQ((unsigned)11, bl.length());
     EXPECT_EQ(0, ::memcmp("fghi", other.c_str(), other.length()));
+
+    EXPECT_EQ(bl.size(), bl.length());
+    EXPECT_EQ(other.size(), other.length());
   }
 }
 
@@ -2507,6 +2515,7 @@ TEST(BufferList, read_fd) {
   EXPECT_EQ(len, (unsigned)bl.read_fd(fd, len));
   //EXPECT_EQ(CEPH_BUFFER_APPEND_SIZE - len, bl.front().unused_tail_length());
   EXPECT_EQ(len, bl.length());
+  EXPECT_EQ(bl.size(), bl.length());
   ::close(fd);
   ::unlink(FILENAME);
 }
@@ -2904,6 +2913,8 @@ TEST(BufferList, InternalCarriage) {
     EXPECT_EQ(bl_with_foo.length(), 3u);
     EXPECT_EQ(bl_with_foo.get_num_buffers(), 1u);
 
+    EXPECT_EQ(bl_with_foo.size(), bl_with_foo.length());
+
     bl.append(bl_with_foo);
     EXPECT_EQ(bl.get_num_buffers(), 2u);
   }
@@ -2940,8 +2951,10 @@ TEST(BufferList, ContiguousAppender) {
     denc(int64_t(24), ap);
     EXPECT_EQ(bl.get_num_buffers(), 3u);
     EXPECT_EQ(bl.length(), sizeof(int64_t) + 3u);
+    EXPECT_EQ(bl.size(), bl.length());
   }
   EXPECT_EQ(bl.length(), 2u * sizeof(int64_t) + 3u);
+  EXPECT_EQ(bl.size(), bl.length());
 }
 
 TEST(BufferList, TestPtrAppend) {
@@ -2997,6 +3010,7 @@ TEST(BufferList, TestCopyAll) {
   bufferlist::iterator i = bl.begin();
   bufferlist bl2;
   i.copy_all(bl2);
+  ASSERT_EQ(bl2.size(), BIG_SZ);
   ASSERT_EQ(bl2.length(), BIG_SZ);
   std::shared_ptr <unsigned char> big2(
       (unsigned char*)malloc(BIG_SZ), free);
