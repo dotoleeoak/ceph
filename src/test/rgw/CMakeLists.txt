@@ -58,7 +58,8 @@ add_executable(ceph_test_rgw_d4n_policy
   )
 target_include_directories(ceph_test_rgw_d4n_policy SYSTEM PRIVATE 
 	"${CMAKE_SOURCE_DIR}/src/rgw/"
-	"${CMAKE_SOURCE_DIR}/src/rgw/driver")
+	"${CMAKE_SOURCE_DIR}/src/rgw/driver"
+	"${CMAKE_SOURCE_DIR}/src/rgw/driver/cache")
 target_link_libraries(ceph_test_rgw_d4n_policy PRIVATE
   rgw_common
   librados

@@ -1064,7 +1064,6 @@ target_link_libraries(test_nvmeof_mon_encoding
   mon ceph-common global-static
   )
 
-
 if(WITH_BREAKPAD)
 # unittest_ceph_breakpad
 add_executable(unittest_ceph_breakpad

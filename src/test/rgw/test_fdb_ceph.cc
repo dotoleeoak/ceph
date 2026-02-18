@@ -3,7 +3,7 @@
 /*
  * Ceph - scalable distributed file system
  *
- * Copyright (C) 2025 International Business Machines Corp. (IBM)
+ * Copyright (C) 2025-2026 International Business Machines Corp. (IBM)
  *      
  * This is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,8 +22,11 @@
 
 #include <catch2/matchers/catch_matchers_all.hpp>
 
+#include <fmt/format.h> 
+#include <fmt/ranges.h> 
+
 #include "test_fdb-common.h"
-#include "rgw_fdb.h"
+#include "ceph_fdb.h"
 
 #define CATCH_CONFIG_MAIN
 
@@ -58,7 +61,6 @@ TEST_CASE("fdb conversions (ceph)", "[fdb][rgw]") {
  {
   ceph::buffer::list n;
   n.append(msg);
-
   std::vector<std::uint8_t> x;
   x = ceph::libfdb::to::convert(n);
 
@@ -79,6 +81,7 @@ TEST_CASE("fdb conversions (ceph)", "[fdb][rgw]") {
  ceph::buffer::list o;
  ceph::libfdb::from::convert(x, o);
 
+ // A consequence of the way we're doing these encodings is that 
  REQUIRE_THAT(n, Catch::Matchers::RangeEquals(o));
  }
 }
@@ -89,53 +92,35 @@ TEST_CASE("fdb conversions (round-trip, ceph)", "[fdb][rgw]") {
 
   SECTION("string_view -> buffer::list")
   {
-    const std::string_view n = "Hello, World!";
-    ceph::buffer::list o;
-  
+    const std::string_view n = "Whee!";
     lfdb::set(lfdb::make_transaction(dbh), "key", n, lfdb::commit_after_op::commit);
+
+    ceph::buffer::list o;
     lfdb::get(lfdb::make_transaction(dbh), "key", o);
-  
+
     REQUIRE_THAT(n, Catch::Matchers::RangeEquals(o));
   }
 
-  SECTION("buffer::list (and buffer::list key) -> buffer::list")
+  SECTION("buffer::list -> buffer::list")
   {
     const std::string_view n { "Hello, World!" };
+    lfdb::set(lfdb::make_transaction(dbh), "key", n, lfdb::commit_after_op::commit);
   
     ceph::buffer::list o;
-    o.append(n);
-  
-    lfdb::set(lfdb::make_transaction(dbh), "key", n, lfdb::commit_after_op::commit);
     lfdb::get(lfdb::make_transaction(dbh), "key", o);
-  
+ 
     REQUIRE_THAT(n, Catch::Matchers::RangeEquals(o));
   }
 
-  SECTION("buffer::list (and buffer::list key) -> buffer::list")
+  SECTION("buffer::list -> buffer::list")
   {
     ceph::buffer::list n;
     n.append("Hello, World!");
+    lfdb::set(lfdb::make_transaction(dbh), "key", n, lfdb::commit_after_op::commit);
   
     ceph::buffer::list o;
-    o.append(n);
-  
-    lfdb::set(lfdb::make_transaction(dbh), "key", n, lfdb::commit_after_op::commit);
     lfdb::get(lfdb::make_transaction(dbh), "key", o);
-  
-    REQUIRE_THAT(n, Catch::Matchers::RangeEquals(o));
-  }
 
-  SECTION("buffer::list (and buffer::list key) -> buffer::list")
-  {
-    ceph::buffer::list n;
-    n.append("Hello, World!");
-  
-    ceph::buffer::list o;
-    o.append(n);
-  
-    lfdb::set(lfdb::make_transaction(dbh), "key", n, lfdb::commit_after_op::commit);
-    lfdb::get(lfdb::make_transaction(dbh), "key", o);
-  
     REQUIRE_THAT(n, Catch::Matchers::RangeEquals(o));
   }
 }

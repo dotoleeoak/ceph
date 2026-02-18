@@ -1,7 +1,3 @@
-
-add_executable(radosgw)
-add_library(rgw_common STATIC)
-
 find_program(GPERF gperf
   REQUIRED)
 
@@ -259,22 +255,19 @@ endif()
 if(WITH_RADOSGW_DAOS)
   list(APPEND librgw_common_srcs driver/motr/rgw_sal_daos.cc)
 endif()
-
 if(WITH_RADOSGW_POSIX)
   #add_subdirectory(driver/posix)
   find_package(LMDB REQUIRED)
   add_compile_definitions(LMDB_SAFE_NO_CPP_UTILITIES)
   list(APPEND librgw_common_srcs
+	      driver/posix/rgw_sal_posix.cc
 	      driver/posix/lmdb-safe.cc
-	      driver/posix/notify.cpp
-          driver/posix/posixDB.cc
-	      driver/posix/rgw_sal_posix.cc)
+	      driver/posix/posixDB.cc
+	      driver/posix/notify.cpp)
 endif()
-
 if(WITH_JAEGER)
   list(APPEND librgw_common_srcs rgw_tracer.cc)
 endif()
-
 if(WITH_RADOSGW_ARROW_FLIGHT)
   # NOTE: eventually don't want this in common but just in radosgw daemon
   # list(APPEND radosgw_srcs rgw_flight.cc rgw_flight_frontend.cc)
@@ -282,80 +275,23 @@ if(WITH_RADOSGW_ARROW_FLIGHT)
 endif(WITH_RADOSGW_ARROW_FLIGHT)
 
 if(WITH_RADOSGW_D4N)
-  target_include_directories(rgw_common PRIVATE
-    rgw/driver/cache
-	rgw/driver/d4n
-	rgw/driver/redis
-	rgw/driver/ssd
-    rgw/driver/shared
-    rgw/driver/)
-
   list(APPEND librgw_common_srcs
-        driver/redis/rgw_redis_driver.cc
-        driver/ssd/rgw_ssd_driver.cc
+        rgw_redis_driver.cc
+        rgw_ssd_driver.cc
         driver/d4n/d4n_directory.cc
         driver/d4n/d4n_policy.cc
         driver/d4n/rgw_sal_d4n.cc)
 endif()
 
-if(WITH_RADOSGW_FDB)
- message("FoundationDB support is active (experimental)")
+add_library(rgw_common STATIC ${librgw_common_srcs})
 
- add_library(rgw_fdb STATIC
-  fdb/base.cc
-  fdb/bindings.cc)
-
- target_link_libraries(rgw_fdb PRIVATE
-  -lfdb_c
-  -lm
-  -lrt
- )
-
- target_compile_options(rgw_fdb PRIVATE
-   -pthread)
-
- target_include_directories(rgw_fdb PRIVATE 
-  /usr/include/foundationdb)
-
- target_include_directories(rgw_common PRIVATE 
-  /usr/include/foundationdb
-  "${CMAKE_SOURCE_DIR}/src/rgw")
-
- target_link_libraries(rgw_common PRIVATE
-  rgw_fdb)
-
- target_include_directories(radosgw PRIVATE 
-  /usr/include/foundationdb)
-
- # Use the zpp_bits back-end for serialization:
- add_library(zpp_bits INTERFACE)
-
- # JFW: there must be a nicer way to refer to this path (or ask it to be installed somewhere?):
- target_include_directories(zpp_bits INTERFACE "${CMAKE_BINARY_DIR}/_deps/zpp_bits-src/")
- target_include_directories(rgw_common PRIVATE "${CMAKE_BINARY_DIR}/_deps/zpp_bits-src/")
-
- target_link_libraries(rgw_fdb PRIVATE zpp_bits)
-
-
-endif(WITH_RADOSGW_FDB)
-
-if(D4N_USE_FDB_SINK)
-  message("Building with FoundationDB (FDB) support as D4N sink (experimental).")
-
-  target_compile_definitions(rgw_common PRIVATE D4N_USE_FDB_SINK=1)
-
-  target_include_directories(rgw_common PRIVATE
-    rgw/driver/d4n
-	driver/fdb
-    rgw/driver/shared
-    rgw/driver/)
-
-  list(APPEND librgw_common_srcs
-    driver/fdb/sal_d4n-fdb.cc)
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-Wimplicit-const-int-float-conversion"
+  COMPILER_SUPPORTS_WARN_IMPLICIT_CONST_INT_FLOAT_CONVERSION)
+if(COMPILER_SUPPORTS_WARN_IMPLICIT_CONST_INT_FLOAT_CONVERSION)
+  target_compile_definitions(common-objs PRIVATE
+    HAVE_WARN_IMPLICIT_CONST_INT_FLOAT_CONVERSION)
 endif()
-
-target_sources(rgw_common PRIVATE 
-  ${librgw_common_srcs})
 
 target_link_libraries(rgw_common
   PRIVATE
@@ -439,6 +375,10 @@ if(WITH_RADOSGW_RADOS)
 endif()
 
 if(WITH_RADOSGW_DBSTORE)
+  target_link_libraries(rgw_common PRIVATE global dbstore)
+endif()
+
+if(WITH_RADOSGW_POSIX)
   target_link_libraries(rgw_common PRIVATE global dbstore)
 endif()
 
@@ -551,8 +491,7 @@ target_link_libraries(rgw_schedulers
 set(radosgw_srcs
   rgw_main.cc)
 
-target_sources(radosgw PUBLIC
-  ${radosgw_srcs})
+add_executable(radosgw ${radosgw_srcs})
 
 if(WITH_RADOSGW_ARROW_FLIGHT)
   # target_compile_definitions(radosgw PUBLIC WITH_ARROW_FLIGHT)

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rgw/rgw_fdb.h"
+#include "rgw/ceph_fdb.h"
 
 #include <fmt/format.h>
 #include <fmt/chrono.h>
@@ -67,7 +67,7 @@ inline void set_monotonic_kvs(lfdb::database_handle dbh, int nkeys)
 {
  auto txn = lfdb::make_transaction(dbh, {}, lfdb::commit_after_op::commit);
 
- std::ranges::for_each(std::views::iota(0, 1 + nkeys), [&txn](const auto i) {
+ std::ranges::for_each(std::views::iota(0, nkeys), [&txn](const auto i) {
   lfdb::set(txn, make_key(i), make_value(i));
  });
 }
@@ -90,13 +90,13 @@ struct janitor final
  }
 
  static void drop_all() {
-   // Nobody'd better run this in production!
    // Note: technically, 0xFF, 0xFF is needed to include the system keys (if the transaction's allowed to
-   // access these), but I don't think any tests will be doing this, at least not for now; the documentation
-   // with details is unfortunately light on, for instance, whether or not after 0xFF the NULL character is
-   // included, but we'll assume it is (again, for our purposes):
-   const char begin_key[] = { (char)0x00 };
-   const char end_key[]   = { (char)0xFF };
+   // access these, which is off by default), but I don't think any tests will be doing this; the documentation
+   // with details this is unfortunately light on, for instance, whether or not after 0xFF the NULL character is
+   // included, but we'll assume it is (again, for our purposes). This implies that trying to delete these keys
+   // should fail (that is, deleting (char)0x00 to (char)0xFF won't be expected to work-- this function lies slightly):
+   const char begin_key[] = "key";
+   const char end_key[]   = "key\xFF";
    lfdb::erase(lfdb::make_transaction(lfdb::create_database()),
               lfdb::select { begin_key, end_key }, 
               lfdb::commit_after_op::commit);
